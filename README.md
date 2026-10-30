@@ -4,10 +4,11 @@
 
 ## メンバー
 
-- エンニュウリョウタ（@New119）
-- クカサキハルヤ（@GitHubアカウント）
-- コンドウヒデキ（@GitHubアカウント）
-- ノザキマコト（@GitHubアカウント）
+- New（@New119）
+- taso（@GitHubアカウント）
+- .exe（@GitHubアカウント）
+- tokage（@GitHubアカウント）
+- kurazu（@GitHubアカウント）
 
 ## 作品名（仮）
 
