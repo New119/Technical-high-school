@@ -99,7 +99,6 @@ form.inline { display: inline; }
 
 .turn-info { text-align: center; padding: 6px; color: var(--muted); }
 .turn-info strong { color: var(--text); }
-.pending { color: var(--accent); font-size: 0.9rem; }
 
 /* ---------- カード ---------- */
 .hand { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
@@ -111,19 +110,24 @@ form.inline { display: inline; }
 .card-cost { position: absolute; top: 8px; right: 10px; color: var(--mana); font-weight: 700; }
 .card-name { font-weight: 700; }
 .card-desc { font-size: 0.8rem; color: var(--muted); flex: 1; }
-.discard { font-size: 0.8rem; color: var(--muted); cursor: pointer; }
 
+/* ---------- ウルト ---------- */
 .ult-list { display: grid; gap: 8px; }
 .ult {
-  display: grid; grid-template-columns: auto 8em 7em 1fr; gap: 10px; align-items: center;
-  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+  display: grid; grid-template-columns: 8em 7em 1fr; gap: 4px 10px; align-items: center;
+  width: 100%; text-align: left; font: inherit; color: var(--text);
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel-2); cursor: pointer;
 }
-.ult:has(input:checked) { border-color: var(--bad); background: rgba(239, 90, 90, 0.08); }
-.ult.disabled { opacity: 0.4; cursor: not-allowed; }
+.ult:hover:not(:disabled), .ult:focus-visible { border-color: var(--bad); }
+.ult.active { border-color: var(--bad); background: rgba(239, 90, 90, 0.12); }
+.ult:disabled { opacity: 0.45; cursor: not-allowed; }
 .ult-name { font-weight: 700; }
 .ult-cost { color: var(--accent); font-size: 0.85rem; }
 .ult-desc { color: var(--muted); font-size: 0.85rem; }
-.ult-submit { display: flex; justify-content: flex-end; align-items: center; gap: 12px; }
+.ult-reason { grid-column: 1 / -1; color: #ff9a9a; font-size: 0.8rem; }
+
+.ult-list { display: grid; gap: 8px; }
 
 .mains { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .card.main {
@@ -166,8 +170,8 @@ form.inline { display: inline; }
 
 @media (max-width: 640px) {
   .mains { grid-template-columns: 1fr; }
-  .ult { grid-template-columns: auto 1fr; }
-  .ult-desc { grid-column: 2; }
+  .ult { grid-template-columns: 1fr auto; }
+  .ult-desc, .ult-reason { grid-column: 1 / -1; }
 }
 
 /* ---------- ターン結果の再生（game_controller.js） ---------- */
@@ -229,4 +233,102 @@ form.inline { display: inline; }
 @media (prefers-reduced-motion: reduce) {
   .lp-fill { transition: none; }
   .player-panel.hit, .player-panel.healed, .lp-pop, .log .replay-new { animation: none; }
+}
+
+/* ---------- マナのゲージ（hand_controller.js で払うマナを予告） ---------- */
+.mana-pips { display: inline-flex; gap: 3px; align-items: center; }
+.pip {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1px solid var(--mana); background: transparent;
+  transition: background 0.15s, transform 0.15s;
+}
+.pip.filled { background: var(--mana); }
+.pip.filled.spend {
+  background: repeating-linear-gradient(45deg, var(--warn) 0 3px, transparent 3px 6px);
+  border-color: var(--warn); transform: scale(1.15);
+}
+.mana-after { color: var(--warn); font-weight: 700; margin-left: 4px; }
+
+/* ---------- 手札のカード ---------- */
+.card.support .btn.use { border-color: var(--mana); color: var(--mana); }
+.card.support .btn.use:hover { background: rgba(111, 183, 255, 0.15); }
+.card.support:hover:not(.unaffordable) { border-color: var(--mana); }
+
+/* ---------- このターンに使ったカード ---------- */
+.pending-panel { border-style: dashed; }
+.pending-empty { margin: 0; font-size: 0.9rem; }
+.pending-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px; }
+.pending-card {
+  position: relative; min-width: 160px; max-width: 220px; padding: 8px 10px 8px 34px;
+  border: 1px solid var(--mana); border-radius: 8px; background: rgba(111, 183, 255, 0.08);
+  display: grid; gap: 2px;
+}
+.pending-card.pending-ult { border-color: var(--bad); background: rgba(239, 90, 90, 0.08); }
+.pending-order {
+  position: absolute; left: 8px; top: 8px; width: 20px; height: 20px; border-radius: 50%;
+  background: var(--panel-2); font-size: 0.75rem; display: grid; place-items: center;
+}
+.pending-name { font-weight: 700; }
+.pending-desc { font-size: 0.8rem; color: var(--muted); }
+.pending-meta { font-size: 0.75rem; color: var(--mana); }
+.pending-card.pending-ult .pending-meta { color: #ff9a9a; }
+.pending-card.just-used { animation: just-used 1.2s ease-out; }
+@keyframes just-used {
+  0%   { transform: translateY(-14px) scale(1.1); box-shadow: 0 0 0 rgba(111, 183, 255, 0); opacity: 0; }
+  30%  { transform: translateY(0) scale(1); box-shadow: 0 0 20px rgba(111, 183, 255, 0.7); opacity: 1; }
+  100% { box-shadow: 0 0 0 rgba(111, 183, 255, 0); }
+}
+
+/* ---------- ウルトの「捨てるカードを選ぶ」 ---------- */
+.discard-bar {
+  position: sticky; top: 8px; z-index: 5;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  margin: 0 0 12px; padding: 10px 14px; border-radius: 8px;
+  border: 2px solid var(--bad); background: #2a1c22;
+}
+.discard-bar[hidden] { display: none; }
+.discard-bar-text { display: grid; }
+.discard-bar-text strong { color: #ff9a9a; }
+.discard-bar-actions { display: flex; gap: 8px; }
+.discard-bar.nudge { animation: shake 0.35s; }
+
+.discard-stamp { display: none; }
+.selecting-discard .card.support { cursor: pointer; opacity: 1; }
+.selecting-discard .card.support .use-form { display: none; }
+.selecting-discard .card.support:hover { border-color: var(--bad); }
+.selecting-discard .card.support:focus-visible { outline: 2px solid var(--bad); outline-offset: 2px; }
+.card.support.selected { border-color: var(--bad); background: rgba(239, 90, 90, 0.14); }
+.card.support.selected .discard-stamp {
+  display: block; position: absolute; inset: auto 8px 8px auto;
+  padding: 2px 10px; border: 2px solid var(--bad); border-radius: 6px;
+  color: var(--bad); font-weight: 800; transform: rotate(-8deg); background: var(--panel);
+}
+
+/* ---------- お知らせ（画面下に出て消える） ---------- */
+.toast {
+  position: fixed; left: 50%; bottom: 24px; z-index: 50; transform: translateX(-50%);
+  max-width: min(92vw, 560px); padding: 10px 18px; border-radius: 999px;
+  background: #16324a; border: 1px solid var(--mana); color: var(--text);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  animation: toast 4s ease-in-out forwards; pointer-events: none;
+}
+@keyframes toast {
+  0%   { opacity: 0; transform: translate(-50%, 16px); }
+  8%   { opacity: 1; transform: translate(-50%, 0); }
+  85%  { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* ---------- 自爆率の変化（メインカード） ---------- */
+.rate-before { color: var(--muted); font-weight: normal; }
+.rate-down, .rate-note.good { color: var(--good); }
+.rate-up { color: var(--bad); text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pending-card.just-used, .discard-bar.nudge { animation: none; }
+  .toast { animation-name: toast-plain; } /* 動かさずに、時間がたったら消す */
+}
+@keyframes toast-plain {
+  0%, 90% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
 }

@@ -28,11 +28,11 @@ class GamesController < ApplicationController
   end
 
   def support
-    act { |g| g.use_support(params[:index].to_i) }
+    act(announce: true) { |g| g.use_support(params[:index].to_i) }
   end
 
   def ult
-    act do |g|
+    act(announce: true) do |g|
       raise LifeGamble::GameError, "ウルトを選んでください" if params[:ult].blank?
 
       g.use_ult(params[:ult], Array(params[:discard]))
@@ -54,12 +54,28 @@ class GamesController < ApplicationController
   end
 
   # 操作を実行して対戦画面に戻る。ターンが終わったら、結果を再生するための情報を次の画面に渡す
-  def act(&block)
+  #   announce: true なら、使ったカードを「〜を使いました」と知らせる
+  def act(announce: false, &block)
     snapshot = current_match.act!(&block)
-    flash[:replay] = snapshot if snapshot
+    if snapshot
+      flash[:replay] = snapshot
+    elsif announce
+      flash[:notice] = used_card_notice
+    end
     redirect_to game_path
   rescue LifeGamble::GameError => e
     redirect_to game_path, alert: e.message
+  end
+
+  # 直前に使ったサポートカード・ウルトのお知らせ文
+  def used_card_notice
+    kind, key, discarded = game.turn.pending.last
+    if kind == :support
+      card = card_config.support(key)
+      "「#{card[:name]}」を使いました（マナ -#{card[:cost]}）。効果はターン終了時に発動します"
+    else
+      "ウルト「#{card_config.ult(key)[:name]}」を発動しました（手札#{discarded}枚を捨てた）。効果はターン終了時に発動します"
+    end
   end
 
   def player_name(raw, default)

@@ -5,7 +5,16 @@
          data-game-target="panel" data-player-index="<%= index %>">
   <div class="player-head">
     <h2><%= player.name %><%= " 🤖" if player.cpu? %></h2>
-    <span class="mana">💎 マナ <%= player.mana %> / <%= card_config.mana_cap %></span>
+    <% mine = side == "me" %>
+    <span class="mana">
+      💎 マナ <%= player.mana %> / <%= card_config.mana_cap %>
+      <% if mine %><span class="mana-after" data-hand-target="manaAfter"></span><% end %>
+    </span>
+    <span class="mana-pips" aria-hidden="true">
+      <% card_config.mana_cap.times do |n| %>
+        <span class="pip <%= 'filled' if n < player.mana %>" <%= 'data-hand-target=manaPip' if mine %>></span>
+      <% end %>
+    </span>
     <% if side == "rival" %>
       <span class="hand-count">🂠 手札 <%= player.hand.size %>枚</span>
     <% end %>

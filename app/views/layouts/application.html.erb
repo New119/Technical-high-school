@@ -35,6 +35,9 @@
       <% if flash[:alert] %>
         <div class="flash"><%= flash[:alert] %></div>
       <% end %>
+      <% if notice %>
+        <div class="toast" role="status"><%= notice %></div>
+      <% end %>
       <%= yield %>
     </main>
   </body>
