@@ -1,14 +1,18 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Render dynamic PWA files from app/views/pwa/* (remember to link manifest in application.html.erb)
-  # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
-  # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
+  # タイトル画面とルール説明
+  root "home#index"
+  get "rules" => "home#rules"
 
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # 対戦画面（1人1つの対戦なので単数形リソース）
+  resource :game, only: %i[show create] do
+    post :handoff                    # 2人対戦：画面を渡したあとに押す
+    post :support                    # サポートカードを使う
+    post :ult                        # ウルトを使う
+    post :main, action: :play_main   # メインカードを使ってターン終了
+    post :pass                       # メインカード切れのときのターン終了
+  end
 end

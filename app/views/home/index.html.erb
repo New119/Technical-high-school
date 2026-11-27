@@ -1,0 +1,23 @@
+<section class="title-screen">
+  <h1 class="big-title"><%= card_config.title %></h1>
+  <p class="tagline">LPを削り切るか、相手の自爆を待つか。</p>
+
+  <%= form_with url: game_path, class: "panel start-form" do %>
+    <fieldset class="mode-select">
+      <legend>対戦モード</legend>
+      <label><input type="radio" name="mode" value="cpu" checked> CPUと対戦</label>
+      <label><input type="radio" name="mode" value="pvp"> 2人で対戦（1台で交代）</label>
+    </fieldset>
+    <label>プレイヤー1の名前
+      <input type="text" name="name1" maxlength="12" placeholder="プレイヤー1">
+    </label>
+    <label>プレイヤー2の名前（CPU対戦では「CPU」）
+      <input type="text" name="name2" maxlength="12" placeholder="プレイヤー2 / CPU">
+    </label>
+    <button type="submit" class="btn primary">ゲーム開始</button>
+  <% end %>
+
+  <% if current_match && !current_match.game.over? %>
+    <p><%= link_to "続きから遊ぶ", game_path, class: "btn" %></p>
+  <% end %>
+</section>

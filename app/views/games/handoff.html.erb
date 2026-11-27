@@ -1,0 +1,17 @@
+<section class="handoff panel">
+  <p class="handoff-sub">ターン<%= game.turn_number %></p>
+  <h2><%= game.current_player.name %> の番です</h2>
+  <p>相手に手札が見えないよう、画面を渡してから押してください。</p>
+  <%= form_with url: handoff_game_path do %>
+    <button type="submit" class="btn primary">準備OK（手札を見る）</button>
+  <% end %>
+
+  <details class="log-peek">
+    <summary>直前の出来事を見る</summary>
+    <ul class="log">
+      <% game.recent_log(12).each do |l| %>
+        <li class="log-<%= l[:type] %>"><%= l[:text] %></li>
+      <% end %>
+    </ul>
+  </details>
+</section>
