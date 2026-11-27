@@ -1,4 +1,6 @@
-<div data-controller="game">
+<%= game_screen_tag do %>
+<%= render "replay_bar" %>
+
 <% if game.over? %>
   <section class="result panel">
     <h2><%= game.winner ? "🏆 #{game.winner.name} の勝利！" : "引き分け" %></h2>
@@ -14,23 +16,8 @@
 <% end %>
 
 <%# ---------- 相手の情報 ---------- %>
-<section class="player-panel rival <%= 'active' if !game.over? && game.current_player.equal?(rival) %>">
-  <div class="player-head">
-    <h2><%= rival.name %><%= " 🤖" if rival.cpu? %></h2>
-    <span class="mana">💎 マナ <%= rival.mana %> / <%= card_config.mana_cap %></span>
-    <span class="hand-count">🂠 手札 <%= rival.hand.size %>枚</span>
-  </div>
-  <div class="lp-bar"><div class="lp-fill <%= lp_class(rival) %>" style="width: <%= lp_percent(rival) %>%"></div>
-    <span class="lp-text">LP <%= rival.lp %> / <%= card_config.max_lp %></span></div>
-  <div class="mains-left">
-    <% card_config.main_cards.each do |key, c| %>
-      <span class="main-chip <%= key %>"><%= c[:name] %> ×<%= rival.main_cards[key] %></span>
-    <% end %>
-  </div>
-  <div class="badges">
-    <% badges(rival).each do |kind, text| %><span class="badge <%= kind %>"><%= text %></span><% end %>
-  </div>
-</section>
+<%= render "player_panel", player: rival, side: "rival",
+                           active: !game.over? && game.current_player.equal?(rival) %>
 
 <%# ---------- ターン情報 ---------- %>
 <section class="turn-info">
@@ -43,19 +30,11 @@
 </section>
 
 <%# ---------- 自分の情報 ---------- %>
-<section class="player-panel me <%= 'active' if my_turn? %>">
-  <div class="player-head">
-    <h2><%= me.name %></h2>
-    <span class="mana">💎 マナ <%= me.mana %> / <%= card_config.mana_cap %></span>
-  </div>
-  <div class="lp-bar"><div class="lp-fill <%= lp_class(me) %>" style="width: <%= lp_percent(me) %>%"></div>
-    <span class="lp-text">LP <%= me.lp %> / <%= card_config.max_lp %></span></div>
-  <div class="badges">
-    <% badges(me).each do |kind, text| %><span class="badge <%= kind %>"><%= text %></span><% end %>
-  </div>
-</section>
+<%= render "player_panel", player: me, side: "me", active: my_turn? %>
 
 <% if my_turn? %>
+<div class="controls">
+
   <%# ---------- 手札（サポートカード） ---------- %>
   <section class="panel">
     <h3>手札（サポートカード）<small>☑はウルトで捨てるカード</small></h3>
@@ -128,15 +107,12 @@
       <% end %>
     </div>
   </section>
+</div>
 <% end %>
 
 <%# ---------- ログ ---------- %>
 <section class="panel">
   <h3>ログ</h3>
-  <ul class="log" data-game-target="log">
-    <% game.recent_log(40).each do |l| %>
-      <li class="log-<%= l[:type] %>"><%= l[:text] %></li>
-    <% end %>
-  </ul>
+  <%= render "log", limit: 40 %>
 </section>
-</div>
+<% end %>
