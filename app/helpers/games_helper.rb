@@ -21,7 +21,8 @@ module GamesHelper
 
   # 対戦画面・交代画面の一番外側の要素。再生するターンがあれば、そのデータを JS に渡す
   def game_screen_tag(&block)
-    data = { controller: "game", game_max_lp_value: card_config.max_lp }
+    data = { controller: "game hand", action: "keydown@window->hand#cancelWithEscape",
+             game_max_lp_value: card_config.max_lp }
     data[:game_replay_value] = replay.to_json if replay
     tag.div(class: ("replaying" if replay), data: data, &block)
   end
@@ -53,11 +54,37 @@ module GamesHelper
     list
   end
 
-  # ターン終了時に処理される予定の効果名
-  def pending_names
-    game.turn.pending.map do |kind, key, _|
-      kind == :support ? card_config.support(key)[:name] : "ウルト：#{card_config.ult(key)[:name]}"
+  # このターンに使った（ターン終了時に発動する）サポートカード・ウルトの一覧
+  def pending_effects
+    game.turn.pending.map do |kind, key, discarded|
+      if kind == :support
+        c = card_config.support(key)
+        { kind: "support", name: c[:name], description: c[:description], meta: "💎#{c[:cost]} 支払い済み" }
+      else
+        u = card_config.ult(key)
+        { kind: "ult", name: "ウルト：#{u[:name]}", description: u[:description], meta: "手札#{discarded}枚を捨てた" }
+      end
     end
+  end
+
+  # ウルトが使えない理由（手札が足りないなど）
+  def ult_unusable_reason(key)
+    need = game.ult_discard_count(key)
+    have = game.current_player.hand.size
+    return "手札がありません" if have.zero?
+
+    "手札が#{need - have}枚足りません"
+  end
+
+  # メインカードの自爆率。サポートカードなどで変わっているときは、元の確率も見せる
+  def death_rate_label(key)
+    base = card_config.main(key)[:death_rate]
+    now = game.death_rate(key)
+    return safe_join([ pct(now), tag.span("（自爆無効）", class: "rate-note good") ]) if game.immune_now?
+    return pct(now) if (now - base).abs < 1e-9
+
+    safe_join([ tag.s(pct(base), class: "rate-before"), " → ",
+                tag.span(pct(now), class: now < base ? "rate-down" : "rate-up") ])
   end
 
   def ult_requirement(key)
