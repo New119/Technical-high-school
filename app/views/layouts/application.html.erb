@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
   <head>
-    <title><%= content_for(:title) || "Game" %></title>
+    <title><%= content_for(:title) || card_config.title %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="application-name" content="Game">
+    <meta name="application-name" content="<%= card_config.title %>">
     <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -24,6 +24,18 @@
   </head>
 
   <body>
-    <%= yield %>
+    <header class="site-header">
+      <%= link_to card_config.title, root_path, class: "logo" %>
+      <nav>
+        <% if current_match %><%= link_to "対戦に戻る", game_path %><% end %>
+        <%= link_to "ルール", rules_path %>
+      </nav>
+    </header>
+    <main class="container">
+      <% if flash[:alert] %>
+        <div class="flash"><%= flash[:alert] %></div>
+      <% end %>
+      <%= yield %>
+    </main>
   </body>
 </html>

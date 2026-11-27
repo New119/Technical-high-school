@@ -1,0 +1,92 @@
+# =========================================================
+# カード・ルールの数値設定
+# バランス調整はこのファイルを書き換えるだけでOK（コード変更不要）
+# =========================================================
+
+game:
+  title: "LIFE GAMBLE"
+  max_lp: 6000          # 最大LP
+  start_mana: 3         # 開始時のマナ（0だと先攻勝率85%になるため3に調整）
+  mana_per_turn: 3      # ターン終了時に得るマナ
+  mana_cap: 10          # マナの上限
+  base_hand_size: 5     # 毎ターン配られるサポートカードの基準枚数
+
+# メインカード（毎ターン必ず1枚使う。使い切ったらサポートのみのターン）
+main_cards:
+  small:
+    name: "小"
+    count: 4
+    death_rate: 0.04
+    damage_type: fixed          # fixed = 固定ダメージ
+    damage: 1000
+  medium:
+    name: "中"
+    count: 2
+    death_rate: 0.15
+    damage_type: fixed
+    damage: 3000
+  large:
+    name: "大"
+    count: 1
+    death_rate: 0.50
+    damage_type: percent_current  # 相手の「現在LP」の割合
+    damage: 0.9
+
+# 普通のサポートカード（マナを払って使う。効果はターン終了時に処理）
+support_cards:
+  mana_boost:
+    name: "マナブースト"
+    cost: 2
+    value: 5                     # 得るマナ（実質+3）
+    description: "ターン終了時にマナを5得る（実質+3）"
+  hand_up:
+    name: "手札上限増加"
+    cost: 3
+    value: 1
+    description: "手札上限が永続的に+1（次の自分のターンから）"
+  hand_down:
+    name: "手札削減"
+    cost: 2
+    value: 1
+    description: "相手の次のターンの手札上限-1"
+  self_safety:
+    name: "自爆率低下"
+    cost: 3
+    value: 0.5                   # 倍率
+    description: "このターンの自分の自爆確率を×0.5"
+  opponent_danger:
+    name: "自爆率増加"
+    cost: 4
+    value: 2.0                   # 倍率
+    description: "相手の次のターンの自爆確率を×2"
+  heal:
+    name: "回復"
+    cost: 3
+    value: 0.25                  # 最大LPに対する割合
+    description: "自分のLPを最大LPの25%回復"
+
+# ウルト（手札とは別枠。1ターン1回。手札を捨てて発動）
+# discard: 捨てる枚数（all = 手札すべて）
+# 使ったターンの次の自分のターンは、捨てた枚数だけ配られる手札が減る
+ultimates:
+  extra_turn:
+    name: "追加ターン"
+    discard: 3
+    description: "このターンの後、もう一度自分のターン"
+  draw_block:
+    name: "ドローブロック"
+    discard: 4
+    description: "相手の次のターン、サポートカードが配られない"
+  full_heal:
+    name: "LP全回復"
+    discard: 4                   # 2枚だと強すぎるため4枚に調整
+    description: "自分のLPを最大まで回復"
+  immunity:
+    name: "自爆無効"
+    discard: all
+    description: "次の自分のターン、自爆しない"
+  mana_break:
+    name: "マナ破壊"
+    discard: 4
+    value: 6
+    description: "相手のマナを6減らす"

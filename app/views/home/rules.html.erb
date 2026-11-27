@@ -1,0 +1,49 @@
+<% content_for :title, "ルール | #{card_config.title}" %>
+<section class="panel rules">
+  <h2>ルール</h2>
+
+  <h3>勝利条件</h3>
+  <ul>
+    <li>相手のLP（<%= card_config.max_lp %>）を0にする</li>
+    <li>相手がターン終了時の抽選で自爆する</li>
+    <li>両者がメインカードを使い切ったら、LPが多い方の勝ち（同じなら引き分け）</li>
+  </ul>
+
+  <h3>ターンの流れ</h3>
+  <ol>
+    <li>サポートカードが配られる（基準<%= card_config.base_hand_size %>枚。前の手札は毎ターン捨てられる）</li>
+    <li>マナを払ってサポートカードを使う／ウルトを1回まで使う</li>
+    <li>メインカードを1枚使う（必須。使い切っていればパス）</li>
+    <li>ターン終了：使ったカードの効果 → メインのダメージ → 自爆の抽選 → マナ+<%= card_config.mana_per_turn %>（上限<%= card_config.mana_cap %>）</li>
+  </ol>
+  <p>マナは<%= card_config.start_mana %>からスタートします。</p>
+
+  <h3>メインカード</h3>
+  <table>
+    <tr><th>カード</th><th>枚数</th><th>効果</th><th>自爆確率</th></tr>
+    <% card_config.main_cards.each_value do |c| %>
+      <tr>
+        <td><%= c[:name] %></td><td><%= c[:count] %></td>
+        <td><%= main_card_effect(c) %></td>
+        <td><%= (c[:death_rate] * 100).round(1) %>%</td>
+      </tr>
+    <% end %>
+  </table>
+
+  <h3>サポートカード</h3>
+  <table>
+    <tr><th>カード</th><th>コスト</th><th>効果</th></tr>
+    <% card_config.support_cards.each_value do |c| %>
+      <tr><td><%= c[:name] %></td><td><%= c[:cost] %>マナ</td><td><%= c[:description] %></td></tr>
+    <% end %>
+  </table>
+
+  <h3>ウルト</h3>
+  <p>手札を捨てて発動します。1ターン1回まで。使った次の自分のターンは、捨てた枚数だけ配られる手札が減ります。</p>
+  <table>
+    <tr><th>ウルト</th><th>コスト</th><th>効果</th></tr>
+    <% card_config.ultimates.each do |key, u| %>
+      <tr><td><%= u[:name] %></td><td><%= ult_requirement(key) %></td><td><%= u[:description] %></td></tr>
+    <% end %>
+  </table>
+</section>
