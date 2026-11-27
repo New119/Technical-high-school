@@ -4,7 +4,7 @@ class GamesController < ApplicationController
 
   before_action :require_match, except: :create
 
-  helper_method :game, :me, :rival, :my_turn?
+  helper_method :game, :me, :rival, :my_turn?, :replay
 
   def create
     mode = params[:mode] == "pvp" ? :pvp : :cpu
@@ -14,7 +14,8 @@ class GamesController < ApplicationController
     ]
     match = Match.start(mode: mode, names: names)
     session[:match_id] = match.id
-    redirect_to game_path
+    @current_match = match
+    act # 先攻がCPUなら、CPUのターンを進める
   end
 
   def show
@@ -52,8 +53,10 @@ class GamesController < ApplicationController
     redirect_to root_path unless current_match
   end
 
+  # 操作を実行して対戦画面に戻る。ターンが終わったら、結果を再生するための情報を次の画面に渡す
   def act(&block)
-    current_match.act!(&block)
+    snapshot = current_match.act!(&block)
+    flash[:replay] = snapshot if snapshot
     redirect_to game_path
   rescue LifeGamble::GameError => e
     redirect_to game_path, alert: e.message
@@ -65,6 +68,25 @@ class GamesController < ApplicationController
   end
 
   def game = current_match.game
+
+  # 直前のターンの結果を再生するためのデータ（再生するものがなければ nil）
+  #   lpBefore: 操作する前の両者のLP
+  #   from:     ログの何行目から再生するか
+  #   events:   再生するログ（player: 対象, lp: 変化後のLP, delta: 増減）
+  def replay
+    return @replay if defined?(@replay)
+
+    snapshot = flash[:replay]
+    events = snapshot && game.log[snapshot["from"].to_i..]
+    @replay =
+      if events.present?
+        {
+          lpBefore: snapshot["lp"],
+          from: snapshot["from"].to_i,
+          events: events.map { |e| e.slice(:type, :text, :player, :lp, :delta) }
+        }
+      end
+  end
 
   # 画面の手前側に表示するプレイヤー（CPU戦では人間、2人対戦では今の手番の人）
   def me

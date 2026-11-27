@@ -69,6 +69,7 @@ form.inline { display: inline; }
 
 /* ---------- プレイヤー情報 ---------- */
 .player-panel {
+  position: relative;
   background: var(--panel); border: 2px solid var(--line);
   border-radius: var(--radius); padding: 12px 16px; margin: 10px 0;
 }
@@ -81,12 +82,12 @@ form.inline { display: inline; }
   position: relative; height: 26px; background: var(--bg);
   border-radius: 6px; overflow: hidden; margin: 8px 0;
 }
-.lp-fill { height: 100%; transition: width 0.4s; }
+.lp-fill { height: 100%; transition: width 0.6s ease-out, background 0.6s; }
 .lp-fill.high { background: linear-gradient(90deg, #2e9d68, var(--good)); }
 .lp-fill.mid  { background: linear-gradient(90deg, #c28a1d, var(--warn)); }
 .lp-fill.low  { background: linear-gradient(90deg, #b83434, var(--bad)); }
 .lp-text {
-  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 0.3em;
   font-weight: 700; text-shadow: 0 1px 2px #000;
 }
 .mains-left { display: flex; gap: 8px; }
@@ -167,4 +168,65 @@ form.inline { display: inline; }
   .mains { grid-template-columns: 1fr; }
   .ult { grid-template-columns: auto 1fr; }
   .ult-desc { grid-column: 2; }
+}
+
+/* ---------- ターン結果の再生（game_controller.js） ---------- */
+.replay-bar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  background: var(--panel-2); border: 1px solid var(--accent); border-radius: var(--radius);
+  padding: 8px 14px; margin-bottom: 10px;
+}
+.replay-bar[hidden] { display: none; }
+.replay-label { color: var(--accent); font-weight: 700; }
+/* 再生中は操作できないようにし、結果表示は再生が終わるまで隠す */
+.replaying .controls { opacity: 0.35; pointer-events: none; }
+.replaying .result { display: none; }
+
+.log .replay-pending { display: none; }
+.log .replay-new { animation: log-in 1.2s ease-out; }
+@keyframes log-in {
+  0%   { background: rgba(242, 184, 75, 0.35); transform: translateX(-8px); }
+  30%  { transform: translateX(0); }
+  100% { background: transparent; }
+}
+
+/* 「-1000」「+1500」「セーフ」などの浮かび上がる文字 */
+.lp-pop {
+  position: absolute; right: 24px; top: 4px; z-index: 2;
+  font-size: 1.8rem; font-weight: 800; pointer-events: none;
+  text-shadow: 0 2px 4px #000;
+  animation: pop-up 1.2s ease-out forwards;
+}
+.lp-pop.damage { color: var(--bad); }
+.lp-pop.heal   { color: var(--good); }
+.lp-pop.safe   { color: var(--good); font-size: 1.4rem; }
+.lp-pop.death  { color: var(--bad); font-size: 2.2rem; }
+@keyframes pop-up {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.7); }
+  15%  { opacity: 1; transform: translateY(0) scale(1.2); }
+  30%  { transform: scale(1); }
+  75%  { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-28px); }
+}
+
+/* ダメージで揺れる・回復で光る・自爆で赤くなる */
+.player-panel.hit { animation: shake 0.45s; }
+.player-panel.healed { animation: heal-glow 0.9s; }
+.player-panel.dying { border-color: var(--bad); background: rgba(239, 90, 90, 0.12); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+@keyframes heal-glow {
+  0%, 100% { box-shadow: none; }
+  40% { box-shadow: 0 0 24px rgba(73, 196, 134, 0.6); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-fill { transition: none; }
+  .player-panel.hit, .player-panel.healed, .lp-pop, .log .replay-new { animation: none; }
 }

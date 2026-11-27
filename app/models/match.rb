@@ -10,13 +10,12 @@ class Match
   @lock = Mutex.new
 
   class << self
-    # 新しい対戦を始めて保存する。先攻がCPUならCPUのターンまで進める
+    # 新しい対戦を作って保存する（先攻がCPUのときは、このあと act! で進める）
     def start(mode:, names:)
       match = new(mode: mode, names: names)
       synchronize do
         @store[match.id] = match
         @store.shift while @store.size > MAX_MATCHES
-        match.run_cpu!
       end
       match
     end
@@ -52,13 +51,21 @@ class Match
     @ai.play_turn(game) while !game.over? && game.current_player.cpu?
   end
 
-  # プレイヤーの操作を実行し、CPUを動かす。2人対戦で手番が変わったら交代画面を出す
+  # プレイヤーの操作を実行し、CPUを動かす。2人対戦で手番が変わったら交代画面を出す。
+  #
+  # ターンが終わった（またはゲームが終わった）ときは、画面で結果を順番に再生できるよう
+  # 操作する前の状態 { "from" => ログの位置, "lp" => [両者のLP] } を返す。それ以外は nil。
   def act!
     self.class.synchronize do
       before = game.current_player
-      yield game
+      before_turn = game.turn_number
+      snapshot = { "from" => game.log.size, "lp" => game.players.map(&:lp) }
+
+      yield game if block_given?
       run_cpu!
       self.handoff = true if pvp? && !game.over? && !game.current_player.equal?(before)
+
+      snapshot if game.turn_number != before_turn || game.over?
     end
   end
 end

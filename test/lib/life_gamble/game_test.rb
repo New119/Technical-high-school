@@ -30,6 +30,21 @@ module LifeGamble
       assert_equal 400, b(g).lp
     end
 
+    test "ログにLPの変化と自爆判定の対象が記録される" do
+      g = new_game
+      a(g).mana = 3
+      a(g).lp = 5000
+      give(g, :heal)
+      g.use_support(0)
+      g.play_main(:small)
+
+      heal = g.log.find { |l| l[:type] == :heal }
+      assert_equal({ player: 0, lp: 6000, delta: 1000 }, heal.slice(:player, :lp, :delta))
+      damage = g.log.find { |l| l[:type] == :damage }
+      assert_equal({ player: 1, lp: 5000, delta: -1000 }, damage.slice(:player, :lp, :delta))
+      assert_equal 0, g.log.find { |l| l[:type] == :safe }[:player]
+    end
+
     test "自爆抽選に当たると負け" do
       g = new_game(0.01)
       g.play_main(:small)

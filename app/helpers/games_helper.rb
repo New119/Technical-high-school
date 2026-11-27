@@ -1,8 +1,16 @@
 module GamesHelper
-  def lp_percent(player) = (player.lp * 100.0 / card_config.max_lp).round(1)
+  # 画面を開いた直後に表示するLP。直前のターンを再生するときは、再生前（操作前）のLPから始める
+  def shown_lp(player)
+    return player.lp unless replay
 
-  def lp_class(player)
-    r = player.lp.to_f / card_config.max_lp
+    replay[:lpBefore][game.players.index { |pl| pl.equal?(player) }]
+  end
+
+  def lp_percent(lp) = (lp * 100.0 / card_config.max_lp).round(1)
+
+  # LPの残り具合で色を変える（JS の game_controller.js も同じ基準）
+  def lp_class(lp)
+    r = lp.to_f / card_config.max_lp
     if r > 0.5 then "high"
     elsif r > 0.2 then "mid"
     else "low"
@@ -10,6 +18,13 @@ module GamesHelper
   end
 
   def pct(rate) = "#{(rate * 100).round(2)}%"
+
+  # 対戦画面・交代画面の一番外側の要素。再生するターンがあれば、そのデータを JS に渡す
+  def game_screen_tag(&block)
+    data = { controller: "game", game_max_lp_value: card_config.max_lp }
+    data[:game_replay_value] = replay.to_json if replay
+    tag.div(class: ("replaying" if replay), data: data, &block)
+  end
 
   # メインカードの効果の説明文
   def main_card_effect(card)

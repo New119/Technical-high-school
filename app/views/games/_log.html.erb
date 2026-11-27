@@ -1,0 +1,13 @@
+<%# ログ一覧。再生中の行（直前のターンで増えた行）は最初は隠しておき、JSで順番に表示する %>
+<% lines = replay ? [ limit, game.log.size - replay[:from] ].max : limit %>
+<% offset = game.log.size - [ lines, game.log.size ].min %>
+<ul class="log" data-game-target="log">
+  <% game.log.last(lines).each_with_index do |l, i| %>
+    <% step = replay && (offset + i - replay[:from]) %>
+    <% if step && step >= 0 %>
+      <li class="log-<%= l[:type] %> replay-pending" data-replay-step="<%= step %>"><%= l[:text] %></li>
+    <% else %>
+      <li class="log-<%= l[:type] %>"><%= l[:text] %></li>
+    <% end %>
+  <% end %>
+</ul>

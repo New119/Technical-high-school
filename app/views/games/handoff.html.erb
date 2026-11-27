@@ -1,17 +1,25 @@
-<section class="handoff panel">
-  <p class="handoff-sub">ターン<%= game.turn_number %></p>
-  <h2><%= game.current_player.name %> の番です</h2>
-  <p>相手に手札が見えないよう、画面を渡してから押してください。</p>
-  <%= form_with url: handoff_game_path do %>
-    <button type="submit" class="btn primary">準備OK（手札を見る）</button>
-  <% end %>
+<%= game_screen_tag do %>
+  <%= render "replay_bar" %>
 
-  <details class="log-peek">
-    <summary>直前の出来事を見る</summary>
-    <ul class="log">
-      <% game.recent_log(12).each do |l| %>
-        <li class="log-<%= l[:type] %>"><%= l[:text] %></li>
+  <%# 直前のターンで何が起きたかを、2人で見てから画面を渡せるようにLPを表示する %>
+  <% previous, current = game.players.partition { |pl| !pl.equal?(game.current_player) }.map(&:first) %>
+  <%= render "player_panel", player: previous, side: "rival", active: false %>
+
+  <section class="handoff panel">
+    <p class="handoff-sub">ターン<%= game.turn_number %></p>
+    <h2><%= current.name %> の番です</h2>
+    <p>相手に手札が見えないよう、画面を渡してから押してください。</p>
+    <div class="controls">
+      <%= form_with url: handoff_game_path do %>
+        <button type="submit" class="btn primary">準備OK（手札を見る）</button>
       <% end %>
-    </ul>
-  </details>
-</section>
+    </div>
+
+    <details class="log-peek" <%= "open" if replay %>>
+      <summary>直前の出来事を見る</summary>
+      <%= render "log", limit: 12 %>
+    </details>
+  </section>
+
+  <%= render "player_panel", player: current, side: "me", active: true %>
+<% end %>
