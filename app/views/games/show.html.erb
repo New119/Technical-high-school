@@ -1,142 +1,49 @@
-<div data-controller="game">
+<%= game_screen_tag do %>
+<%= render "replay_bar" %>
+
 <% if game.over? %>
   <section class="result panel">
     <h2><%= game.winner ? "🏆 #{game.winner.name} の勝利！" : "引き分け" %></h2>
     <p><%= game.end_reason %></p>
-    <%= form_with url: game_path, class: "inline" do %>
-      <%= hidden_field_tag :mode, current_match.mode %>
-      <%= hidden_field_tag :name1, game.players[0].name %>
-      <%= hidden_field_tag :name2, game.players[1].name %>
-      <button type="submit" class="btn primary">同じ設定でもう一度</button>
+    <% if current_match.online? %>
+      <p class="muted">もう一度遊ぶときは、タイトルから同じ合言葉で入り直してください。</p>
+    <% else %>
+      <%= form_with url: game_path, class: "inline" do %>
+        <%= hidden_field_tag :mode, current_match.mode %>
+        <%= hidden_field_tag :name1, game.players[0].name %>
+        <%= hidden_field_tag :name2, game.players[1].name %>
+        <button type="submit" class="btn primary">同じ設定でもう一度</button>
+      <% end %>
     <% end %>
     <%= link_to "タイトルへ", root_path, class: "btn" %>
   </section>
 <% end %>
 
 <%# ---------- 相手の情報 ---------- %>
-<section class="player-panel rival <%= 'active' if !game.over? && game.current_player.equal?(rival) %>">
-  <div class="player-head">
-    <h2><%= rival.name %><%= " 🤖" if rival.cpu? %></h2>
-    <span class="mana">💎 マナ <%= rival.mana %> / <%= card_config.mana_cap %></span>
-    <span class="hand-count">🂠 手札 <%= rival.hand.size %>枚</span>
-  </div>
-  <div class="lp-bar"><div class="lp-fill <%= lp_class(rival) %>" style="width: <%= lp_percent(rival) %>%"></div>
-    <span class="lp-text">LP <%= rival.lp %> / <%= card_config.max_lp %></span></div>
-  <div class="mains-left">
-    <% card_config.main_cards.each do |key, c| %>
-      <span class="main-chip <%= key %>"><%= c[:name] %> ×<%= rival.main_cards[key] %></span>
-    <% end %>
-  </div>
-  <div class="badges">
-    <% badges(rival).each do |kind, text| %><span class="badge <%= kind %>"><%= text %></span><% end %>
-  </div>
-</section>
+<%= render "player_panel", player: rival, side: "rival",
+                           active: !game.over? && game.current_player.equal?(rival) %>
 
 <%# ---------- ターン情報 ---------- %>
 <section class="turn-info">
   <% unless game.over? %>
     <strong>ターン<%= game.turn_number %></strong>：<%= game.current_player.name %> の番
-    <% if my_turn? && pending_names.any? %>
-      <div class="pending">終了時に処理：<%= pending_names.join(" → ") %></div>
-    <% end %>
   <% end %>
 </section>
 
 <%# ---------- 自分の情報 ---------- %>
-<section class="player-panel me <%= 'active' if my_turn? %>">
-  <div class="player-head">
-    <h2><%= me.name %></h2>
-    <span class="mana">💎 マナ <%= me.mana %> / <%= card_config.mana_cap %></span>
-  </div>
-  <div class="lp-bar"><div class="lp-fill <%= lp_class(me) %>" style="width: <%= lp_percent(me) %>%"></div>
-    <span class="lp-text">LP <%= me.lp %> / <%= card_config.max_lp %></span></div>
-  <div class="badges">
-    <% badges(me).each do |kind, text| %><span class="badge <%= kind %>"><%= text %></span><% end %>
-  </div>
-</section>
+<%= render "player_panel", player: me, side: "me", active: my_turn? %>
 
 <% if my_turn? %>
-  <%# ---------- 手札（サポートカード） ---------- %>
-  <section class="panel">
-    <h3>手札（サポートカード）<small>☑はウルトで捨てるカード</small></h3>
-    <% if me.hand.empty? %>
-      <p class="muted">手札はありません</p>
-    <% end %>
-    <div class="hand">
-      <% me.hand.each_with_index do |key, i| %>
-        <% card = card_config.support(key) %>
-        <% affordable = me.mana >= card[:cost] %>
-        <div class="card support <%= 'unaffordable' unless affordable %>">
-          <div class="card-cost">💎<%= card[:cost] %></div>
-          <div class="card-name"><%= card[:name] %></div>
-          <div class="card-desc"><%= card[:description] %></div>
-          <%= form_with url: support_game_path do %>
-            <%= hidden_field_tag :index, i, id: nil %>
-            <button type="submit" class="btn small" <%= 'disabled' unless affordable %>>使う</button>
-          <% end %>
-          <label class="discard">
-            <input type="checkbox" name="discard[]" value="<%= i %>" form="ult-form"
-                   data-game-target="discard" data-action="change->game#updateDiscardCount"> 捨てる
-          </label>
-        </div>
-      <% end %>
-    </div>
-  </section>
-
-  <%# ---------- ウルト ---------- %>
-  <section class="panel">
-    <h3>ウルト <small><%= game.turn.ult_used ? "（このターンは使用済み）" : "1ターン1回・捨てた枚数だけ次ターンの手札が減る" %></small></h3>
-    <%= form_with url: ult_game_path, id: "ult-form", class: "ult-list" do %>
-      <% card_config.ultimates.each do |key, u| %>
-        <% usable = game.ult_usable?(key) %>
-        <label class="ult <%= 'disabled' unless usable %>">
-          <input type="radio" name="ult" value="<%= key %>" <%= 'disabled' unless usable %>>
-          <span class="ult-name"><%= u[:name] %></span>
-          <span class="ult-cost"><%= ult_requirement(key) %></span>
-          <span class="ult-desc"><%= u[:description] %></span>
-        </label>
-      <% end %>
-      <div class="ult-submit">
-        <span data-game-target="discardCount">選択中：0枚</span>
-        <button type="submit" class="btn danger" <%= 'disabled' if game.turn.ult_used %>>ウルト発動</button>
-      </div>
-    <% end %>
-  </section>
-
-  <%# ---------- メインカード ---------- %>
-  <section class="panel">
-    <h3>メインカード <small>使うとターン終了（効果処理 → ダメージ → 自爆判定）</small></h3>
-    <div class="mains">
-      <% if me.main_left? %>
-        <% card_config.main_cards.each do |key, c| %>
-          <% left = me.main_cards[key] %>
-          <%= form_with url: main_game_path, class: "main-card #{key}" do %>
-            <%= hidden_field_tag :card, key, id: nil %>
-            <button type="submit" class="card main" <%= 'disabled' if left.zero? %>>
-              <span class="card-name"><%= c[:name] %></span>
-              <span class="card-desc"><%= main_card_effect(c) %></span>
-              <span class="death">自爆 <%= pct(game.death_rate(key)) %></span>
-              <span class="left">残り <%= left %>枚</span>
-            </button>
-          <% end %>
-        <% end %>
-      <% else %>
-        <%= form_with url: pass_game_path do %>
-          <p class="muted">メインカードを使い切りました。サポートを使ったらターンを終えてください。</p>
-          <button type="submit" class="btn primary">ターン終了</button>
-        <% end %>
-      <% end %>
-    </div>
+  <%= render "controls" %>
+<% elsif current_match.online? && !game.over? %>
+  <section class="panel opponent-turn" role="status">
+    <p><strong><%= rival.name %></strong> が考えています… 相手がターンを終えると、自動で画面が切り替わります。</p>
   </section>
 <% end %>
 
 <%# ---------- ログ ---------- %>
 <section class="panel">
   <h3>ログ</h3>
-  <ul class="log" data-game-target="log">
-    <% game.recent_log(40).each do |l| %>
-      <li class="log-<%= l[:type] %>"><%= l[:text] %></li>
-    <% end %>
-  </ul>
+  <%= render "log", limit: 40 %>
 </section>
-</div>
+<% end %>

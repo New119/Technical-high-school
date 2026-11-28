@@ -160,8 +160,10 @@ module LifeGamble
       # ② メインカードのダメージ
       if main_key
         dmg = main_damage(main_key, o)
+        before = o.lp
         o.take_damage(dmg)
-        add_log(:damage, "#{o.name}に#{dmg}ダメージ！（残りLP #{o.lp}）")
+        # 演出の「-○○」は実際に減ったLP（残りLPより大きいダメージでも、0までしか減らない）
+        add_log(:damage, "#{o.name}に#{dmg}ダメージ！（残りLP #{o.lp}）", **lp_change(o, o.lp - before))
         return finish(p, "#{o.name}のLPが0になった") if o.dead?
       end
 
@@ -170,12 +172,15 @@ module LifeGamble
         rate = death_rate(main_key, p)
         roll = rng.rand
         if rate.zero?
-          add_log(:safe, "自爆判定：自爆無効でセーフ")
+          add_log(:safe, "自爆判定：自爆無効でセーフ", player: index_of(p))
         elsif roll < rate
-          add_log(:death, "自爆判定（#{pct(rate)}）……#{p.name}は自爆した！")
+          # 自爆したらLPは0になる（ゲームはここで終わるので、勝敗には影響しない）
+          lost = p.lp
+          p.take_damage(lost)
+          add_log(:death, "自爆判定（#{pct(rate)}）……#{p.name}は自爆した！", **lp_change(p, -lost))
           return finish(o, "#{p.name}が自爆した")
         else
-          add_log(:safe, "自爆判定（#{pct(rate)}）……セーフ")
+          add_log(:safe, "自爆判定（#{pct(rate)}）……セーフ", player: index_of(p))
         end
       end
 
@@ -223,7 +228,7 @@ module LifeGamble
       when :heal
         before = p.lp
         p.heal((config.max_lp * card[:value]).floor)
-        add_log(:heal, "回復：#{p.name}のLP #{before}→#{p.lp}")
+        add_log(:heal, "回復：#{p.name}のLP #{before}→#{p.lp}", **lp_change(p, p.lp - before))
       end
     end
 
@@ -238,7 +243,7 @@ module LifeGamble
       when :full_heal
         before = p.lp
         p.heal(config.max_lp)
-        add_log(:heal, "LP全回復：#{p.name}のLP #{before}→#{p.lp}")
+        add_log(:heal, "LP全回復：#{p.name}のLP #{before}→#{p.lp}", **lp_change(p, p.lp - before))
       when :immunity
         p.next_turn[:immune] = true
         add_log(:effect, "自爆無効：#{p.name}は次の自分のターン自爆しない")
@@ -285,9 +290,16 @@ module LifeGamble
       nil
     end
 
-    def add_log(type, text)
-      @log << { type: type, text: text }
+    # ログ1行分。data には画面の演出用の情報（誰のLPがいくつ変わったか等）を入れる
+    #   player: 対象プレイヤーの番号（players の 0 か 1）
+    #   lp:     変化した後のLP
+    #   delta:  LPの増減（ダメージはマイナス）
+    def add_log(type, text, **data)
+      @log << { type: type, text: text, **data }
     end
+
+    def lp_change(player, delta) = { player: index_of(player), lp: player.lp, delta: delta }
+    def index_of(player) = players.index { |pl| pl.equal?(player) }
 
     def pct(rate) = "#{(rate * 100).round(2)}%"
     def fmt(num)  = num == num.to_i ? num.to_i.to_s : num.to_s

@@ -1,0 +1,7 @@
+<%# 直前のターンを再生している間だけ表示するバー %>
+<% if replay %>
+  <div class="replay-bar" data-game-target="replayBar">
+    <span class="replay-label">▶ 直前のターンを再生中…</span>
+    <button type="button" class="btn small" data-action="game#skip">スキップ</button>
+  </div>
+<% end %>

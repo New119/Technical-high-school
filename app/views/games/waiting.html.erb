@@ -1,0 +1,11 @@
+<%# オンライン対戦：相手が同じ合言葉で入ってくるのを待つ画面（相手が来たら自動で対戦画面に切り替わる） %>
+<%= tag.section class: "waiting panel", data: online_poll_data do %>
+  <p class="handoff-sub">オンライン対戦</p>
+  <h2>相手を待っています…</h2>
+  <p>相手に、同じ合言葉を入力してもらってください。</p>
+  <p class="passphrase"><span class="muted">合言葉</span> <strong><%= current_match.passphrase %></strong></p>
+  <p class="muted waiting-dots" aria-hidden="true">● ● ●</p>
+  <%= form_with url: leave_game_path do %>
+    <button type="submit" class="btn">やめてタイトルへ</button>
+  <% end %>
+<% end %>

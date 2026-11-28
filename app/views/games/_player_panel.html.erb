@@ -1,0 +1,37 @@
+<%# プレイヤー1人分の情報（LPバー・マナ・効果）。side は "me" か "rival" %>
+<% index = game.players.index { |pl| pl.equal?(player) } %>
+<% lp = shown_lp(player) %>
+<%# LPが0のプレイヤーは灰色に（再生中は、再生でLPが0になったときにJSで付ける） %>
+<section class="player-panel <%= side %> <%= 'active' if active %> <%= 'depleted' if lp.zero? %>"
+         data-game-target="panel" data-player-index="<%= index %>">
+  <div class="player-head">
+    <h2><%= player.name %><%= " 🤖" if player.cpu? %></h2>
+    <% mine = side == "me" %>
+    <span class="mana">
+      💎 マナ <%= player.mana %> / <%= card_config.mana_cap %>
+      <% if mine %><span class="mana-after" data-hand-target="manaAfter"></span><% end %>
+    </span>
+    <span class="mana-pips" aria-hidden="true">
+      <% card_config.mana_cap.times do |n| %>
+        <span class="pip <%= 'filled' if n < player.mana %>" <%= 'data-hand-target=manaPip' if mine %>></span>
+      <% end %>
+    </span>
+    <% if side == "rival" %>
+      <span class="hand-count">🂠 手札 <%= player.hand.size %>枚</span>
+    <% end %>
+  </div>
+  <div class="lp-bar">
+    <div class="lp-fill <%= lp_class(lp) %>" style="width: <%= lp_percent(lp) %>%"></div>
+    <span class="lp-text">LP <span class="lp-value"><%= lp %></span> / <%= card_config.max_lp %></span>
+  </div>
+  <% if side == "rival" %>
+    <div class="mains-left">
+      <% card_config.main_cards.each do |key, c| %>
+        <span class="main-chip <%= key %>"><%= c[:name] %> ×<%= player.main_cards[key] %></span>
+      <% end %>
+    </div>
+  <% end %>
+  <div class="badges">
+    <% badges(player).each do |kind, text| %><span class="badge <%= kind %>"><%= text %></span><% end %>
+  </div>
+</section>

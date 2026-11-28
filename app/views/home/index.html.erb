@@ -17,7 +17,20 @@
     <button type="submit" class="btn primary">ゲーム開始</button>
   <% end %>
 
-  <% if current_match && !current_match.game.over? %>
+  <%= form_with url: room_game_path, class: "panel start-form online-form" do %>
+    <h2>オンライン対戦（合言葉）</h2>
+    <p class="muted">2人で同じ合言葉を入力すると、別々の端末で対戦できます。先に入った人は、相手が来るまで待ちます。</p>
+    <label>あなたの名前
+      <input type="text" name="name" maxlength="12" placeholder="プレイヤー">
+    </label>
+    <label>合言葉
+      <input type="text" name="passphrase" maxlength="<%= Match::PASSPHRASE_MAX_LENGTH %>" required
+             autocomplete="off" placeholder="例：ねこまんま">
+    </label>
+    <button type="submit" class="btn primary">合言葉で対戦</button>
+  <% end %>
+
+  <% if current_match&.in_progress? %>
     <p><%= link_to "続きから遊ぶ", game_path, class: "btn" %></p>
   <% end %>
 </section>

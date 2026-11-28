@@ -1,0 +1,101 @@
+<%# 自分のターンの操作（このターンに使ったカード・手札・ウルト・メインカード） %>
+<%# 再生中は inert でマウスもキーボード（Tab→Enter など）も効かなくする。再生が終わると game_controller.js が外す %>
+<div class="controls" data-game-target="controls" <%= "inert" if replay %>>
+
+  <%# ---------- このターンに使ったカード ---------- %>
+  <%= render "pending_effects" %>
+
+  <%# ---------- 手札（サポートカード） ---------- %>
+  <section class="panel hand-panel" data-hand-target="handSection">
+    <h3>手札（サポートカード）<small>マナを払って使う。効果はターン終了時に発動</small></h3>
+
+    <%# ウルトを選んだあとに出る「捨てるカードを選んでください」のバー %>
+    <%= form_with url: ult_game_path, id: "ult-form", class: "discard-bar",
+                  data: { hand_target: "discardBar" }, html: { hidden: true } do %>
+      <input type="hidden" name="ult" value="" data-hand-target="ultInput">
+      <div class="discard-bar-text">
+        <strong data-hand-target="ultName"></strong>
+        <span data-hand-target="discardMessage"></span>
+      </div>
+      <div class="discard-bar-actions">
+        <button type="button" class="btn small" data-action="hand#cancelUlt">やめる</button>
+        <button type="submit" class="btn small danger" data-hand-target="confirm" disabled>発動する</button>
+      </div>
+    <% end %>
+
+    <% if me.hand.empty? %>
+      <p class="muted">手札はありません</p>
+    <% end %>
+    <div class="hand">
+      <% me.hand.each_with_index do |key, i| %>
+        <% card = card_config.support(key) %>
+        <% shortage = card[:cost] - me.mana %>
+        <div class="card support <%= 'unaffordable' if shortage.positive? %>"
+             data-hand-target="card" data-cost="<%= card[:cost] %>"
+             data-action="click->hand#toggleCard keydown.enter->hand#toggleCard keydown.space->hand#toggleCard
+                          mouseenter->hand#previewMana mouseleave->hand#clearPreview
+                          focusin->hand#previewMana focusout->hand#clearPreview">
+          <div class="card-cost">💎<%= card[:cost] %></div>
+          <div class="card-name"><%= card[:name] %></div>
+          <div class="card-desc"><%= card[:description] %></div>
+          <%= form_with url: support_game_path, class: "use-form" do %>
+            <%= hidden_field_tag :index, i, id: nil %>
+            <% if shortage.positive? %>
+              <button type="submit" class="btn small" disabled>マナ不足（あと<%= shortage %>）</button>
+            <% else %>
+              <button type="submit" class="btn small use">使う（💎<%= card[:cost] %>）</button>
+            <% end %>
+          <% end %>
+          <input type="checkbox" name="discard[]" value="<%= i %>" form="ult-form" hidden data-hand-target="checkbox">
+          <span class="discard-stamp" aria-hidden="true">捨てる</span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <%# ---------- ウルト ---------- %>
+  <section class="panel">
+    <h3>ウルト <small><%= game.turn.ult_used ? "（このターンは使用済み）" : "1ターン1回・手札を捨てて発動。捨てた枚数だけ次ターンの手札が減る" %></small></h3>
+    <div class="ult-list">
+      <% card_config.ultimates.each do |key, u| %>
+        <% usable = game.ult_usable?(key) %>
+        <button type="button" class="ult" <%= 'disabled' unless usable %>
+                data-action="hand#startUlt" data-ult-key="<%= key %>" data-ult-name="<%= u[:name] %>"
+                data-ult-need="<%= u[:discard] %>">
+          <span class="ult-name"><%= u[:name] %></span>
+          <span class="ult-cost"><%= ult_requirement(key) %></span>
+          <span class="ult-desc"><%= u[:description] %></span>
+          <% if !usable && !game.turn.ult_used %>
+            <span class="ult-reason"><%= ult_unusable_reason(key) %></span>
+          <% end %>
+        </button>
+      <% end %>
+    </div>
+  </section>
+
+  <%# ---------- メインカード ---------- %>
+  <section class="panel">
+    <h3>メインカード <small>使うとターン終了（使ったカードの効果 → ダメージ → 自爆判定）</small></h3>
+    <div class="mains">
+      <% if me.main_left? %>
+        <% card_config.main_cards.each do |key, c| %>
+          <% left = me.main_cards[key] %>
+          <%= form_with url: main_game_path, class: "main-card #{key}" do %>
+            <%= hidden_field_tag :card, key, id: nil %>
+            <button type="submit" class="card main" <%= 'disabled' if left.zero? %>>
+              <span class="card-name"><%= c[:name] %></span>
+              <span class="card-desc"><%= main_card_effect(c) %></span>
+              <span class="death">自爆 <%= death_rate_label(key) %></span>
+              <span class="left">残り <%= left %>枚</span>
+            </button>
+          <% end %>
+        <% end %>
+      <% else %>
+        <%= form_with url: pass_game_path do %>
+          <p class="muted">メインカードを使い切りました。サポートを使ったらターンを終えてください。</p>
+          <button type="submit" class="btn primary">ターン終了</button>
+        <% end %>
+      <% end %>
+    </div>
+  </section>
+</div>

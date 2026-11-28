@@ -1,0 +1,20 @@
+<%# このターンに使ったサポートカード・ウルト（効果はターン終了時に順番に発動する） %>
+<% effects = pending_effects %>
+<section class="panel pending-panel">
+  <h3>このターンに使ったカード <small>メインカードを出してターンを終えると、左から順に発動</small></h3>
+  <% if effects.empty? %>
+    <p class="muted pending-empty">まだ使っていません。手札のサポートカードを「使う」と、ここに並びます。</p>
+  <% else %>
+    <ol class="pending-list">
+      <% effects.each_with_index do |e, i| %>
+        <% just_used = notice.present? && i == effects.size - 1 %>
+        <li class="pending-card pending-<%= e[:kind] %> <%= 'just-used' if just_used %>">
+          <span class="pending-order"><%= i + 1 %></span>
+          <span class="pending-name"><%= e[:name] %></span>
+          <span class="pending-desc"><%= e[:description] %></span>
+          <span class="pending-meta"><%= e[:meta] %></span>
+        </li>
+      <% end %>
+    </ol>
+  <% end %>
+</section>

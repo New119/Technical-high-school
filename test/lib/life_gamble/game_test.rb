@@ -30,12 +30,50 @@ module LifeGamble
       assert_equal 400, b(g).lp
     end
 
+    test "ログにLPの変化と自爆判定の対象が記録される" do
+      g = new_game
+      a(g).mana = 3
+      a(g).lp = 5000
+      give(g, :heal)
+      g.use_support(0)
+      g.play_main(:small)
+
+      heal = g.log.find { |l| l[:type] == :heal }
+      assert_equal({ player: 0, lp: 6000, delta: 1000 }, heal.slice(:player, :lp, :delta))
+      damage = g.log.find { |l| l[:type] == :damage }
+      assert_equal({ player: 1, lp: 5000, delta: -1000 }, damage.slice(:player, :lp, :delta))
+      assert_equal 0, g.log.find { |l| l[:type] == :safe }[:player]
+    end
+
+    # 演出の「-○○」は実際に減ったLP。残りLPより大きいダメージでも0までしか減らない
+    { "残りLP未満" => [ 1500, 500, -1000 ],
+      "残りLPちょうど" => [ 1000, 0, -1000 ],
+      "残りLP超過" => [ 500, 0, -500 ] }.each do |label, (lp, after, delta)|
+      test "ダメージのログのLP変化は実際に減った量（#{label}）" do
+        g = new_game
+        b(g).lp = lp
+        g.play_main(:small) # 1000ダメージ
+        damage = g.log.find { |l| l[:type] == :damage }
+        assert_equal({ player: 1, lp: after, delta: delta }, damage.slice(:player, :lp, :delta))
+        assert_match(/1000ダメージ/, damage[:text], "文章には攻撃のダメージ量を出す")
+      end
+    end
+
     test "自爆抽選に当たると負け" do
       g = new_game(0.01)
       g.play_main(:small)
       assert g.over?
       assert_same b(g), g.winner
       assert_match(/自爆/, g.end_reason)
+    end
+
+    test "自爆したプレイヤーのLPは0になり、ログに記録される" do
+      g = new_game(0.01)
+      a(g).lp = 4500
+      g.play_main(:small)
+      assert_equal 0, a(g).lp
+      death = g.log.find { |l| l[:type] == :death }
+      assert_equal({ player: 0, lp: 0, delta: -4500 }, death.slice(:player, :lp, :delta))
     end
 
     test "自爆抽選に外れればセーフ" do

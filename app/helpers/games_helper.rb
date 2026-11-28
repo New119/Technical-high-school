@@ -1,8 +1,16 @@
 module GamesHelper
-  def lp_percent(player) = (player.lp * 100.0 / card_config.max_lp).round(1)
+  # 画面を開いた直後に表示するLP。直前のターンを再生するときは、再生前（操作前）のLPから始める
+  def shown_lp(player)
+    return player.lp unless replay
 
-  def lp_class(player)
-    r = player.lp.to_f / card_config.max_lp
+    replay[:lpBefore][game.players.index { |pl| pl.equal?(player) }]
+  end
+
+  def lp_percent(lp) = (lp * 100.0 / card_config.max_lp).round(1)
+
+  # LPの残り具合で色を変える（JS の game_controller.js も同じ基準）
+  def lp_class(lp)
+    r = lp.to_f / card_config.max_lp
     if r > 0.5 then "high"
     elsif r > 0.2 then "mid"
     else "low"
@@ -10,6 +18,22 @@ module GamesHelper
   end
 
   def pct(rate) = "#{(rate * 100).round(2)}%"
+
+  # 対戦画面・交代画面の一番外側の要素。再生するターンがあれば、そのデータを JS に渡す
+  def game_screen_tag(&block)
+    data = { controller: "game hand", action: "keydown@window->hand#cancelWithEscape",
+             game_max_lp_value: card_config.max_lp }
+    data[:game_replay_value] = replay.to_json if replay
+    if current_match.online? && !game.over?
+      data.merge!(online_poll_data) { |_, a, b| "#{a} #{b}" }
+    end
+    tag.div(class: ("replaying" if replay), data: data, &block)
+  end
+
+  # オンライン対戦：相手が操作したら画面を読み込み直すための設定（online_controller.js）
+  def online_poll_data
+    { controller: "online", online_url_value: status_game_path, online_version_value: current_match.version }
+  end
 
   # メインカードの効果の説明文
   def main_card_effect(card)
@@ -38,11 +62,37 @@ module GamesHelper
     list
   end
 
-  # ターン終了時に処理される予定の効果名
-  def pending_names
-    game.turn.pending.map do |kind, key, _|
-      kind == :support ? card_config.support(key)[:name] : "ウルト：#{card_config.ult(key)[:name]}"
+  # このターンに使った（ターン終了時に発動する）サポートカード・ウルトの一覧
+  def pending_effects
+    game.turn.pending.map do |kind, key, discarded|
+      if kind == :support
+        c = card_config.support(key)
+        { kind: "support", name: c[:name], description: c[:description], meta: "💎#{c[:cost]} 支払い済み" }
+      else
+        u = card_config.ult(key)
+        { kind: "ult", name: "ウルト：#{u[:name]}", description: u[:description], meta: "手札#{discarded}枚を捨てた" }
+      end
     end
+  end
+
+  # ウルトが使えない理由（手札が足りないなど）
+  def ult_unusable_reason(key)
+    need = game.ult_discard_count(key)
+    have = game.current_player.hand.size
+    return "手札がありません" if have.zero?
+
+    "手札が#{need - have}枚足りません"
+  end
+
+  # メインカードの自爆率。サポートカードなどで変わっているときは、元の確率も見せる
+  def death_rate_label(key)
+    base = card_config.main(key)[:death_rate]
+    now = game.death_rate(key)
+    return safe_join([ pct(now), tag.span("（自爆無効）", class: "rate-note good") ]) if game.immune_now?
+    return pct(now) if (now - base).abs < 1e-9
+
+    safe_join([ tag.s(pct(base), class: "rate-before"), " → ",
+                tag.span(pct(now), class: now < base ? "rate-down" : "rate-up") ])
   end
 
   def ult_requirement(key)
