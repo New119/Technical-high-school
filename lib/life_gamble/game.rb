@@ -240,10 +240,10 @@ module LifeGamble
       when :draw_block
         o.next_turn[:draw_blocked] = true
         add_log(:effect, "ドローブロック：#{o.name}は次のターン手札が配られない")
-      when :full_heal
+      when :big_heal
         before = p.lp
-        p.heal(config.max_lp)
-        add_log(:heal, "LP全回復：#{p.name}のLP #{before}→#{p.lp}", **lp_change(p, p.lp - before))
+        p.heal((config.max_lp * ult[:value]).floor)
+        add_log(:heal, "#{ult[:name]}：#{p.name}のLP #{before}→#{p.lp}", **lp_change(p, p.lp - before))
       when :immunity
         p.next_turn[:immune] = true
         add_log(:effect, "自爆無効：#{p.name}は次の自分のターン自爆しない")

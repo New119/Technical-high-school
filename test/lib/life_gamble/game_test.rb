@@ -182,12 +182,24 @@ module LifeGamble
       assert_equal 0, b(g).hand.size
     end
 
-    test "LP全回復" do
+    test "大回復は最大LPの50%（3000）を回復する" do
       g = new_game
-      a(g).lp = 100
-      g.use_ult(:full_heal, [ 0, 1, 2, 3 ])
-      g.play_main(:small)
+      a(g).lp = 600 # 大を受けた直後くらい
+      g.use_ult(:big_heal, [ 0, 1, 2, 3 ])
+      g.play_main(:small) # ウルトの効果はターン終了時
+      assert_equal 3600, a(g).lp, "全回復ではなく3000だけ回復する"
+      heal = g.log.find { |l| l[:type] == :heal }
+      assert_equal({ player: 0, lp: 3600, delta: 3000 }, heal.slice(:player, :lp, :delta))
+      assert_match(/大回復/, heal[:text])
+    end
+
+    test "大回復は最大LPを超えない" do
+      g = new_game
+      a(g).lp = 4000
+      g.use_ult(:big_heal, [ 0, 1, 2, 3 ])
+      g.play_main(:small) # ウルトの効果はターン終了時
       assert_equal 6000, a(g).lp
+      assert_equal 2000, g.log.find { |l| l[:type] == :heal }[:delta]
     end
 
     test "自爆無効は次の自分のターンに効く" do
@@ -214,9 +226,9 @@ module LifeGamble
 
     test "ウルトは1ターン1回で枚数が合わないと使えない" do
       g = new_game
-      assert_raises(LifeGamble::GameError) { g.use_ult(:full_heal, [ 0 ]) }
-      g.use_ult(:full_heal, [ 0, 1, 2, 3 ])
-      assert_raises(LifeGamble::GameError) { g.use_ult(:full_heal, [ 0, 1, 2, 3 ]) }
+      assert_raises(LifeGamble::GameError) { g.use_ult(:big_heal, [ 0 ]) }
+      g.use_ult(:big_heal, [ 0, 1, 2, 3 ])
+      assert_raises(LifeGamble::GameError) { g.use_ult(:big_heal, [ 0, 1, 2, 3 ]) }
     end
 
     test "メインが残っている間はパスできない" do

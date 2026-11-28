@@ -54,8 +54,8 @@ module LifeGamble
     def try_ult(game, me, opp, main)
       hand = me.hand.size
       choice =
-        if me.lp <= 2500 && game.ult_usable?(:full_heal)
-          :full_heal
+        if me.lp <= big_heal_threshold(game) && game.ult_usable?(:big_heal)
+          :big_heal
         elsif opp.mana >= 6 && hand >= 4 && unaffordable_count(game, me) >= 2 && game.ult_usable?(:mana_break)
           :mana_break
         elsif me.main_left?(:large) && main != :large && hand.between?(1, 2) &&
@@ -105,6 +105,12 @@ module LifeGamble
 
     def unaffordable_count(game, me)
       me.hand.count { |k| game.config.support(k)[:cost] > me.mana }
+    end
+
+    # 大回復を使うLP（回復量をまるごと使い切れるところまで減っていたら使う）
+    def big_heal_threshold(game)
+      max = game.config.max_lp
+      max - (max * game.config.ult(:big_heal)[:value]).floor
     end
   end
 end

@@ -77,10 +77,13 @@ ultimates:
     name: "ドローブロック"
     discard: 4
     description: "相手の次のターン、サポートカードが配られない"
-  full_heal:
-    name: "LP全回復"
+  big_heal:
+    name: "大回復"
     discard: 4                   # 2枚だと強すぎるため4枚に調整
-    description: "自分のLPを最大まで回復"
+    value: 0.5                   # 最大LPに対する割合
+    # 以前は「LP全回復」だったが、大で削った分をすべて戻せてしまい
+    # 大のリスク（自爆50%）に見合わなかったため、回復量を固定にした
+    description: "自分のLPを最大LPの50%回復"
   immunity:
     name: "自爆無効"
     discard: all

@@ -117,7 +117,7 @@ class GamesFlowTest < ActionDispatch::IntegrationTest
     start_my_turn(hand: %i[heal heal heal hand_up], mana: 0)
     get game_path
     assert_select "button.ult[data-ult-key=extra_turn][data-ult-need='3']"
-    assert_select "button.ult[data-ult-key=full_heal][data-ult-need='4']"
+    assert_select "button.ult[data-ult-key=big_heal][data-ult-need='4']"
     assert_select "button.ult[data-ult-key=immunity][data-ult-need=all]"
     assert_select "form#ult-form[hidden]"
     assert_select "input[type=checkbox][name='discard[]'][form=ult-form]", 4
@@ -132,7 +132,7 @@ class GamesFlowTest < ActionDispatch::IntegrationTest
   test "手札が足りないウルトは理由を表示する" do
     start_my_turn(hand: %i[heal], mana: 0)
     get game_path
-    assert_select "button.ult[data-ult-key=full_heal][disabled] .ult-reason", "手札が3枚足りません"
+    assert_select "button.ult[data-ult-key=big_heal][disabled] .ult-reason", "手札が3枚足りません"
   end
 
   test "自爆率低下を使うと、メインカードの自爆率が変わったことを表示する" do
