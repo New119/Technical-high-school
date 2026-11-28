@@ -24,7 +24,15 @@ module GamesHelper
     data = { controller: "game hand", action: "keydown@window->hand#cancelWithEscape",
              game_max_lp_value: card_config.max_lp }
     data[:game_replay_value] = replay.to_json if replay
+    if current_match.online? && !game.over?
+      data.merge!(online_poll_data) { |_, a, b| "#{a} #{b}" }
+    end
     tag.div(class: ("replaying" if replay), data: data, &block)
+  end
+
+  # オンライン対戦：相手が操作したら画面を読み込み直すための設定（online_controller.js）
+  def online_poll_data
+    { controller: "online", online_url_value: status_game_path, online_version_value: current_match.version }
   end
 
   # メインカードの効果の説明文

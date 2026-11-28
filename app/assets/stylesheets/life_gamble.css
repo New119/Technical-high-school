@@ -332,3 +332,15 @@ form.inline { display: inline; }
   0%, 90% { opacity: 1; }
   100% { opacity: 0; visibility: hidden; }
 }
+
+/* ---------- オンライン対戦 ---------- */
+.online-form h2 { margin: 0; font-size: 1.2rem; }
+.online-form p { margin: 0; }
+.waiting { text-align: center; padding: 40px 20px; }
+.waiting h2 { font-size: 1.8rem; margin: 6px 0; color: var(--accent); }
+.passphrase { font-size: 1.2rem; }
+.passphrase strong { letter-spacing: 0.1em; }
+.waiting-dots { letter-spacing: 0.4em; animation: waiting-blink 1.4s ease-in-out infinite; }
+@keyframes waiting-blink { 50% { opacity: 0.3; } }
+@media (prefers-reduced-motion: reduce) { .waiting-dots { animation: none; } }
+.opponent-turn { text-align: center; color: var(--muted); }

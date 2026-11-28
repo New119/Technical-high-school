@@ -14,5 +14,8 @@ Rails.application.routes.draw do
     post :ult                        # ウルトを使う
     post :main, action: :play_main   # メインカードを使ってターン終了
     post :pass                       # メインカード切れのときのターン終了
+    post :room                       # オンライン対戦：合言葉の部屋に入る（なければ作る）
+    post :leave                      # オンライン対戦：相手を待つのをやめる
+    get :status                      # オンライン対戦：相手が操作したかを調べる
   end
 end

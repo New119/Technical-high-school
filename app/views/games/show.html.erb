@@ -5,11 +5,15 @@
   <section class="result panel">
     <h2><%= game.winner ? "🏆 #{game.winner.name} の勝利！" : "引き分け" %></h2>
     <p><%= game.end_reason %></p>
-    <%= form_with url: game_path, class: "inline" do %>
-      <%= hidden_field_tag :mode, current_match.mode %>
-      <%= hidden_field_tag :name1, game.players[0].name %>
-      <%= hidden_field_tag :name2, game.players[1].name %>
-      <button type="submit" class="btn primary">同じ設定でもう一度</button>
+    <% if current_match.online? %>
+      <p class="muted">もう一度遊ぶときは、タイトルから同じ合言葉で入り直してください。</p>
+    <% else %>
+      <%= form_with url: game_path, class: "inline" do %>
+        <%= hidden_field_tag :mode, current_match.mode %>
+        <%= hidden_field_tag :name1, game.players[0].name %>
+        <%= hidden_field_tag :name2, game.players[1].name %>
+        <button type="submit" class="btn primary">同じ設定でもう一度</button>
+      <% end %>
     <% end %>
     <%= link_to "タイトルへ", root_path, class: "btn" %>
   </section>
@@ -29,7 +33,13 @@
 <%# ---------- 自分の情報 ---------- %>
 <%= render "player_panel", player: me, side: "me", active: my_turn? %>
 
-<%= render "controls" if my_turn? %>
+<% if my_turn? %>
+  <%= render "controls" %>
+<% elsif current_match.online? && !game.over? %>
+  <section class="panel opponent-turn" role="status">
+    <p><strong><%= rival.name %></strong> が考えています… 相手がターンを終えると、自動で画面が切り替わります。</p>
+  </section>
+<% end %>
 
 <%# ---------- ログ ---------- %>
 <section class="panel">
