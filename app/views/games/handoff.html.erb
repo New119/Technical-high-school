@@ -9,7 +9,8 @@
     <p class="handoff-sub">ターン<%= game.turn_number %></p>
     <h2><%= current.name %> の番です</h2>
     <p>相手に手札が見えないよう、画面を渡してから押してください。</p>
-    <div class="controls">
+    <%# 再生中は inert で操作できなくする（再生が終わると game_controller.js が外す） %>
+    <div class="controls" data-game-target="controls" <%= "inert" if replay %>>
       <%= form_with url: handoff_game_path do %>
         <button type="submit" class="btn primary">準備OK（手札を見る）</button>
       <% end %>

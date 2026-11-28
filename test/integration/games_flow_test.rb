@@ -76,17 +76,22 @@ class GamesFlowTest < ActionDispatch::IntegrationTest
     post handoff_game_path
     follow_redirect!
     assert_not_includes response.body, "data-game-replay-value", "ターンが終わっていない操作では再生しない"
+    # 自爆(4%)で対戦が終わると操作エリアが出ないので、自爆しない乱数にしておく（最初の rand は 0.41…）
+    Match.find(session[:match_id]).game.instance_variable_set(:@rng, Random.new(1))
 
     post main_game_path, params: { card: "small" }
     follow_redirect!
     assert_includes response.body, "data-game-replay-value"
     assert_includes response.body, "replay-pending"
     assert_includes response.body, "直前のターンを再生中"
+    assert_match(/<div class="controls" data-game-target="controls" inert>/, response.body,
+                 "再生中はキーボードでも操作できないよう inert を付ける")
     # 再生前（操作前）のLPから表示を始める
     assert_includes response.body, %(<span class="lp-value">6000</span>)
 
     get game_path
     assert_not_includes response.body, "data-game-replay-value", "再読み込みしたら再生しない"
+    assert_not_includes response.body, " inert>", "再生しないときは操作できる"
   end
 
   test "サポートカードを使うと、お知らせと「このターンに使ったカード」に表示される" do
@@ -139,7 +144,13 @@ class GamesFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "CPU戦ではCPUのターンまでまとめて再生する" do
-    post game_path, params: { mode: "cpu", name1: "テスト" }
+    # CPUが先攻で最初のターンに自爆すると自分の番が来ないので、自分の番が来る対戦になるまで作り直す
+    10.times do
+      post game_path, params: { mode: "cpu", name1: "テスト" }
+      break unless Match.find(session[:match_id]).game.over?
+    end
+    assert_not Match.find(session[:match_id]).game.over?
+
     post main_game_path, params: { card: "small" }
     follow_redirect!
     assert_includes response.body, "data-game-replay-value"

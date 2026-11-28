@@ -160,8 +160,10 @@ module LifeGamble
       # ② メインカードのダメージ
       if main_key
         dmg = main_damage(main_key, o)
+        before = o.lp
         o.take_damage(dmg)
-        add_log(:damage, "#{o.name}に#{dmg}ダメージ！（残りLP #{o.lp}）", **lp_change(o, -dmg))
+        # 演出の「-○○」は実際に減ったLP（残りLPより大きいダメージでも、0までしか減らない）
+        add_log(:damage, "#{o.name}に#{dmg}ダメージ！（残りLP #{o.lp}）", **lp_change(o, o.lp - before))
         return finish(p, "#{o.name}のLPが0になった") if o.dead?
       end
 
@@ -172,7 +174,10 @@ module LifeGamble
         if rate.zero?
           add_log(:safe, "自爆判定：自爆無効でセーフ", player: index_of(p))
         elsif roll < rate
-          add_log(:death, "自爆判定（#{pct(rate)}）……#{p.name}は自爆した！", player: index_of(p))
+          # 自爆したらLPは0になる（ゲームはここで終わるので、勝敗には影響しない）
+          lost = p.lp
+          p.take_damage(lost)
+          add_log(:death, "自爆判定（#{pct(rate)}）……#{p.name}は自爆した！", **lp_change(p, -lost))
           return finish(o, "#{p.name}が自爆した")
         else
           add_log(:safe, "自爆判定（#{pct(rate)}）……セーフ", player: index_of(p))

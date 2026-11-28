@@ -184,6 +184,7 @@ form.inline { display: inline; }
 .replay-bar[hidden] { display: none; }
 .replay-label { color: var(--accent); font-weight: 700; }
 /* 再生中は操作できないようにし、結果表示は再生が終わるまで隠す */
+/* 操作の禁止は inert 属性で行う（キーボードも防げる）。ここは見た目を薄くするだけ */
 .replaying .controls { opacity: 0.35; pointer-events: none; }
 .replaying .result { display: none; }
 
@@ -331,6 +332,43 @@ form.inline { display: inline; }
 @keyframes toast-plain {
   0%, 90% { opacity: 1; }
   100% { opacity: 0; visibility: hidden; }
+}
+
+/* ---------- 自爆の演出（game_controller.js の playDeath） ---------- */
+/* 自爆判定の「……」で溜めている間、対象のパネルが脈打つ */
+.player-panel.judging { animation: judging 0.8s ease-in-out infinite; }
+@keyframes judging {
+  0%, 100% { box-shadow: 0 0 0 rgba(239, 90, 90, 0); }
+  50% { box-shadow: 0 0 22px rgba(239, 90, 90, 0.55); }
+}
+/* 「自爆！」で大きく揺れる */
+.player-panel.hit-hard { animation: shake-hard 0.6s; }
+@keyframes shake-hard {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-14px, 3px) rotate(-1deg); }
+  25% { transform: translate(12px, -3px) rotate(1deg); }
+  40% { transform: translate(-10px, 2px); }
+  55% { transform: translate(8px, -2px); }
+  70% { transform: translate(-5px, 1px); }
+  85% { transform: translate(3px, 0); }
+}
+/* LPが0まで消えていく間、バーが赤く点滅する */
+.lp-bar.draining {
+  box-shadow: 0 0 0 2px var(--bad), 0 0 18px rgba(239, 90, 90, 0.7);
+  animation: draining 0.25s steps(2) infinite;
+}
+.lp-bar.draining .lp-fill { background: linear-gradient(90deg, #ff2d2d, #ff8080); transition-timing-function: ease-in; }
+@keyframes draining {
+  50% { box-shadow: 0 0 0 2px #ff8080, 0 0 28px rgba(255, 80, 80, 0.95); }
+}
+/* LPが0になったプレイヤー */
+.player-panel.depleted { filter: grayscale(0.75); }
+.player-panel.depleted .lp-text { color: #ff9a9a; }
+.player-panel.depleted.dying { filter: grayscale(0.4); }
+.lp-pop.vanish { color: #ffb3b3; font-size: 1.5rem; letter-spacing: 0.2em; top: 34px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .player-panel.judging, .player-panel.hit-hard, .lp-bar.draining { animation: none; }
 }
 
 /* ---------- オンライン対戦 ---------- */

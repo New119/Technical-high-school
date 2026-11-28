@@ -1,5 +1,6 @@
 <%# 自分のターンの操作（このターンに使ったカード・手札・ウルト・メインカード） %>
-<div class="controls">
+<%# 再生中は inert でマウスもキーボード（Tab→Enter など）も効かなくする。再生が終わると game_controller.js が外す %>
+<div class="controls" data-game-target="controls" <%= "inert" if replay %>>
 
   <%# ---------- このターンに使ったカード ---------- %>
   <%= render "pending_effects" %>

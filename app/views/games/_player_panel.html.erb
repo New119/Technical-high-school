@@ -1,7 +1,8 @@
 <%# プレイヤー1人分の情報（LPバー・マナ・効果）。side は "me" か "rival" %>
 <% index = game.players.index { |pl| pl.equal?(player) } %>
 <% lp = shown_lp(player) %>
-<section class="player-panel <%= side %> <%= 'active' if active %>"
+<%# LPが0のプレイヤーは灰色に（再生中は、再生でLPが0になったときにJSで付ける） %>
+<section class="player-panel <%= side %> <%= 'active' if active %> <%= 'depleted' if lp.zero? %>"
          data-game-target="panel" data-player-index="<%= index %>">
   <div class="player-head">
     <h2><%= player.name %><%= " 🤖" if player.cpu? %></h2>
